@@ -2,7 +2,7 @@ Internship project
 # 1016-knndtw
 Use "knn + dtw" to make a baseline
 
-There is no data in the data file. You need 
+There is no data in the data file. You need:
 
 VALUES_FILE = './data/glitch_values.bin'
 
