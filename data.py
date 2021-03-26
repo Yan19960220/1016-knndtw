@@ -32,8 +32,7 @@ def not_contain_nan(np_array):
         return True not in np.isnan(np_array)
 
 
-def getData(random_range=50):
-    DURATION_TO_EXAMINE = 0.5
+def getData(random_range=50, DURATION_TO_EXAMINE=0.5):
     FREQUENCY = 4096
     HALF_VALUES_PER_DURATION = int(DURATION_TO_EXAMINE * FREQUENCY / 2)
 
@@ -76,6 +75,7 @@ def getData(random_range=50):
     glitch_values = list2array(glitch_values)
     glitch_times = list2array(glitch_times)
     glitch_peak = list2array(glitch_peak_times)
+
     glitch_segments = []
     for current_values, current_times, current_peak in zip(glitch_values, glitch_times, glitch_peak):
         peak_indices = np.searchsorted(current_times, current_peak)
