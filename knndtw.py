@@ -10,12 +10,10 @@ from collections import Counter
 from itertools import groupby
 from operator import itemgetter
 from sklearn.metrics.pairwise import euclidean_distances
-from data import getData, load_history_matrix, load_matrix_from_file
+from data import load_history_matrix, load_matrix_from_file, POS_FILE, OUTPUT_POS
 from tools import list2file
 from dtw import FastDtw
 
-OUTPUT_POS = True
-POS_FILE = './pos.txt'
 MATRIX_FILE = './dtw_matrix.bin'
 
 
@@ -81,23 +79,24 @@ class KnnDtw(object):
 
     def cal_distance_matrix(self):
         distance_matrix = []
-        if self.dist == 'dtw':
-            if load_history_matrix and \
-                    os.path.exists(MATRIX_FILE):
-                distance_matrix = load_matrix_from_file(MATRIX_FILE, len(self.poses))
-            else:
+        if load_history_matrix and \
+                os.path.exists(MATRIX_FILE):
+            distance_matrix = load_matrix_from_file(MATRIX_FILE, len(self.poses))
+        else:
+            if self.dist == 'dtw':
                 # Compute DTW distance matrix
                 dtw_tools = FastDtw(self.time, self.time, None)
                 distance_matrix = dtw_tools.dist_matrix()
                 distance_matrix.tofile(MATRIX_FILE)
-                if OUTPUT_POS:
-                    list2file(POS_FILE, self.poses)
-        elif self.dist == 'euclidean':
-            # euclidean distance matrix
-            distance_matrix = self.cal_euclidean(self.time)
+            elif self.dist == 'euclidean':
+                # euclidean distance matrix
+                distance_matrix = self.cal_euclidean(self.time)
+            if OUTPUT_POS:
+                list2file(POS_FILE, self.poses)
         return distance_matrix
 
-    def cal_euclidean(self, times_series):
+    @staticmethod
+    def cal_euclidean(times_series):
         # return squareform(pdist(time, 'euclidean'))
         return euclidean_distances(times_series)
 

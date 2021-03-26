@@ -79,7 +79,8 @@ class FastDtw(object):
         self.x = x
         self.y = y
 
-    def dtw_distance(self, x, y):
+    @staticmethod
+    def dtw_distance(x, y):
         return dtw.distance_fast(x, y, use_pruning=True)
         # distance, _ = fastdtw_p(x, y, dist=euclidean)
         # return distance

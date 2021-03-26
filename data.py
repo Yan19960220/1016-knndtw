@@ -16,7 +16,9 @@ TIMES_FILE = './data/glitch_times.bin'
 LENGTHS_FILE = './data/glitch_lengths.bin'
 METADATA_FILE = './data/trainingset_v1d1_metadata.csv'
 POS_FILE = './pos.txt'
-load_history_matrix = True
+
+OUTPUT_POS = True
+load_history_matrix = False
 
 
 def calculate_time(time, time_ns):
@@ -30,7 +32,7 @@ def not_contain_nan(np_array):
         return True not in np.isnan(np_array)
 
 
-def getData():
+def getData(random_range=50):
     DURATION_TO_EXAMINE = 0.5
     FREQUENCY = 4096
     HALF_VALUES_PER_DURATION = int(DURATION_TO_EXAMINE * FREQUENCY / 2)
@@ -90,11 +92,16 @@ def getData():
             for i in range(len(glitch_ids) - 1):
                 if not_contain_nan(glitch_segments[glitch_ids[i]]):
                     segment_per_class[glitch_class].append([glitch_segments[glitch_ids[i]].tolist(), glitch_ids[i]])
+    if isinstance(random_range, int):
+        return random_range, random_sample(segment_per_class, random_range)
+    if isinstance(random_range, list):
+        samples = []
+        for item in random_range:
+            samples.append((item, random_sample(segment_per_class, item)))
+        return samples
 
-    return random_sample(segment_per_class)
 
-
-def random_sample(segment_per_class):
+def random_sample(segment_per_class, sample_range):
     """ Returns the list of the random sample
                (new_indexes, time_series, label)
 
@@ -104,25 +111,25 @@ def random_sample(segment_per_class):
                The list of time_series
                The list of the corresponding indexes
     """
-    random_segments = {}
+    dataset = {}
     poses = []
     if load_history_matrix:
         poses = file2list(POS_FILE)
     if poses:
         for k in segment_per_class.keys():
-            random_segments[k] = ([], [])
+            dataset[k] = ([], [])
             for item in segment_per_class[k]:
                 if item[1] in poses:
-                    random_segments[k][0].append(item[0])
-                    random_segments[k][1].append(item[1])
+                    dataset[k][0].append(item[0])
+                    dataset[k][1].append(item[1])
     else:
         for k in segment_per_class.keys():
             array = list2array(segment_per_class[k])
-            if len(segment_per_class[k]) > 50:
-                list_a = random.sample(segment_per_class[k], 50)
+            if len(segment_per_class[k]) > sample_range:
+                list_a = random.sample(segment_per_class[k], sample_range)
                 array = list2array(list_a)
-            random_segments[k] = (array[:, 0].tolist(), array[:, 1].tolist())
-    dataset = dataSet(random_segments)
+            dataset[k] = (array[:, 0].tolist(), array[:, 1].tolist())
+    dataset = dataSet(dataset)
     ts = []
     time = []
     poses = []
@@ -147,17 +154,16 @@ def list2array(listA):
 
 
 def dataSet(random_segments):
-    dataset = {'Air_Compressor': random_segments['Air_Compressor'],  # (50, 10)
-               '1400Ripples': random_segments['1400Ripples'],
-               '1080Lines': random_segments['1080Lines'],
-               'Blip': random_segments['Blip'],
-               'Extremely_Loud': random_segments['Extremely_Loud'],
-               'Koi_Fish': random_segments['Koi_Fish'],
-               'Chirp': random_segments['Chirp'],
-               'Light_Modulation': random_segments['Light_Modulation'],
-               'Low_Frequency_Burst': random_segments['Low_Frequency_Burst'],
-               'Low_Frequency_Lines': random_segments['Low_Frequency_Lines']}
-    return dataset
+    return {'Air_Compressor': random_segments['Air_Compressor'],  # (50, 10)
+            '1400Ripples': random_segments['1400Ripples'],
+            '1080Lines': random_segments['1080Lines'],
+            'Blip': random_segments['Blip'],
+            'Extremely_Loud': random_segments['Extremely_Loud'],
+            'Koi_Fish': random_segments['Koi_Fish'],
+            'Chirp': random_segments['Chirp'],
+            'Light_Modulation': random_segments['Light_Modulation'],
+            'Low_Frequency_Burst': random_segments['Low_Frequency_Burst'],
+            'Low_Frequency_Lines': random_segments['Low_Frequency_Lines']}
 
 
 def extra_data_from_meta(file):

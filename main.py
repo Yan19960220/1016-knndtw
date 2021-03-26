@@ -7,17 +7,27 @@ matplotlib.use('TkAgg')
 
 
 if __name__ == "__main__":
+
     k_range = 50
     accuracy, k_list = [], []
-    ts, time, poses = getData()  # ts(indexes, time_series, label, pos)
-    classifier = KnnDtw(k_range, ts, time, poses, dist="dtw")
-    k_list, accuracy = classifier.result()
-    # matrix = cal_distance_matrix(time)
-    # votes = get_n_neighbors(k_range, ts, matrix)
-    # k_list, accuracy = vote(ts, k_range, votes)
+    sample_list = getData([50, 100, 200, 300])  # ts(indexes, time_series, label, pos)
 
     fig = plt.figure(figsize=(12, 4))
-    _ = plt.plot([k for k in k_list], [s for s in accuracy], lw=1)
+    if isinstance(sample_list, list):
+        for item in sample_list:
+            (range, (ts, time, poses)) = item
+            print(range)
+            classifier = KnnDtw(k_range, ts, time, poses)
+            k_list, accuracy = classifier.result()
+            label = str(range)
+            plt.plot([k for k in k_list], [s for s in accuracy], lw=1, marker='o', label=label)
+    else:
+        label, (ts, time, poses) = sample_list
+        classifier = KnnDtw(k_range, ts, time, poses)
+        k_list, accuracy = classifier.result()
+        plt.plot([k for k in k_list], [s for s in accuracy], lw=1, marker='o', label=str(label))
+    plt.legend()
+    # _ = plt.plot([k for k in k_list], [s for s in accuracy], lw=1, marker='o', markerfacecolor='blue')
     plt.title('KNN + DTW for the time series')
     plt.ylabel('Accuracy')
     plt.xlabel('K')
