@@ -32,9 +32,10 @@ def not_contain_nan(np_array):
         return True not in np.isnan(np_array)
 
 
-def getData(random_range=50, DURATION_TO_EXAMINE=0.5):
-    FREQUENCY = 4096
-    HALF_VALUES_PER_DURATION = int(DURATION_TO_EXAMINE * FREQUENCY / 2)
+def getData(random_range=[50], DURATION_TO_EXAMINE=0.5):
+    # Type Check
+    if not isinstance(random_range, list):
+        raise TypeError('random_range is not type List: {}'.format(type(random_range)))
 
     values = np.fromfile(VALUES_FILE, dtype=np.float64)
     times = np.fromfile(TIMES_FILE, dtype=np.float64)
@@ -76,14 +77,35 @@ def getData(random_range=50, DURATION_TO_EXAMINE=0.5):
     glitch_times = list2array(glitch_times)
     glitch_peak = list2array(glitch_peak_times)
 
+    FREQUENCY = 4096
+    HALF_VALUES_PER_DURATION = []
+    if isinstance(DURATION_TO_EXAMINE, float):
+        HALF_VALUES_PER_DURATION = [int(DURATION_TO_EXAMINE * FREQUENCY / 2)]
+    elif isinstance(DURATION_TO_EXAMINE, list):
+        HALF_VALUES_PER_DURATION = [int(duration * FREQUENCY / 2) for duration in DURATION_TO_EXAMINE]
+
+    result = {}
+
+    for item in random_range:
+        result[item] = []
+
+    for item_range in random_range:
+        for duration in HALF_VALUES_PER_DURATION:
+            segment_per_class = get_segment_per_class(duration, glitch_classes_inverted, glitch_peak,
+                                                      glitch_times, glitch_values)
+            result[item_range].append(random_sample(segment_per_class, item_range))
+        print(">> time_series range - " + str(item_range))
+    return result
+
+
+def get_segment_per_class(duration, glitch_classes_inverted, glitch_peak, glitch_times, glitch_values):
     glitch_segments = []
     for current_values, current_times, current_peak in zip(glitch_values, glitch_times, glitch_peak):
         peak_indices = np.searchsorted(current_times, current_peak)
         glitch_segments.append(
-            current_values[peak_indices - HALF_VALUES_PER_DURATION: peak_indices + HALF_VALUES_PER_DURATION]
+            current_values[peak_indices - duration: peak_indices + duration]
         )
     glitch_segments = list2array(glitch_segments)
-
     segment_per_class = {}
     for glitch_class, glitch_ids in glitch_classes_inverted.items():
         if len(glitch_ids) > 1:
@@ -92,13 +114,7 @@ def getData(random_range=50, DURATION_TO_EXAMINE=0.5):
             for i in range(len(glitch_ids) - 1):
                 if not_contain_nan(glitch_segments[glitch_ids[i]]):
                     segment_per_class[glitch_class].append([glitch_segments[glitch_ids[i]].tolist(), glitch_ids[i]])
-    if isinstance(random_range, int):
-        return random_range, random_sample(segment_per_class, random_range)
-    if isinstance(random_range, list):
-        samples = []
-        for item in random_range:
-            samples.append((item, random_sample(segment_per_class, item)))
-        return samples
+    return segment_per_class
 
 
 def random_sample(segment_per_class, sample_range):
@@ -131,18 +147,13 @@ def random_sample(segment_per_class, sample_range):
             dataset[k] = (array[:, 0].tolist(), array[:, 1].tolist())
     dataset = dataSet(dataset)
     ts = []
-    time = []
-    poses = []
     c = 0
     for label in dataset:
         (list_time_series, list_indexes) = dataset[label]
         for time_series, indexes in zip(list_time_series, list_indexes):
             ts.append((c, time_series, label, indexes))
-            time.append(time_series)
-            poses.append(indexes)
             c += 1
-    print(">> time_series: length - " + str(len(ts)))
-    return ts, time, poses
+    return ts
 
 
 def load_matrix_from_file(matrix_filepath, length):
